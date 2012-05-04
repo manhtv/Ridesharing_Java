@@ -2,23 +2,14 @@ package main;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Scanner;
 
 import util.Geo;
-
-class SortByDis implements Comparator<TripMeta> {
-	@Override
-	public int compare(TripMeta t1, TripMeta t2) {
-		return (int) (t1.td - t2.td);
-	}
-}
 
 class GPSPoint {
 	double lat;
@@ -34,7 +25,7 @@ class GPSPoint {
 
 class FatherTrip{
 	double benefit=0.0;
-	ArrayList<TripMeta> children=new ArrayList<TripMeta>();
+	ArrayList<Integer> children=new ArrayList<Integer>();
 }
 
 class TripMeta {
@@ -61,19 +52,24 @@ public class Ridesharing {
 
 	public void main() {
 		int[] delay={900,1800,2700,3600};//, Constants.INF};
+		String dirName="Taxi_Shanghai";//"small_test_copy";
+		
+		/*
 		ArrayList<Integer> delayArray=new ArrayList<Integer>();
 		for(int i=0;i<delay.length;i++){
 			delayArray.add(delay[i]);
-		}
-		String dirName="Taxi_Shanghai";//"small_test_copy"
-		
+		}	
 		produceMergeableRelation(dirName, delayArray, true);
+		*/
+		
 		HashMap<Integer, ArrayList<Integer>> child_trips=new HashMap<Integer, ArrayList<Integer>>();
+		child_trips.put(0, new ArrayList<Integer>());
 		HashMap<Integer, FatherTrip> father_trips=new HashMap<Integer, FatherTrip>();
+		father_trips.put(0, new FatherTrip());
 		HashMap<String, Double> mergeable_relation=new HashMap<String, Double>();
 		
 		int idx=3;
-		String fileName="od_merge_"+String.valueOf(delay[idx]);
+		String fileName="od_merge";
 		loadMergeableRelation(dirName, fileName, delay[idx],false, child_trips, father_trips, mergeable_relation);
 	}
 	
@@ -131,7 +127,7 @@ public class Ridesharing {
 					if (!father_trips.containsKey(f_id)){
 						father_trips.put(f_id, new FatherTrip());
 					}
-					father_trips.get(f_id).children.add(trip_meta.get(c_id));
+					father_trips.get(f_id).children.add(c_id);
 					father_trips.get(f_id).benefit+=trip_meta.get(c_id).td;
 				}
 				
@@ -150,10 +146,17 @@ public class Ridesharing {
 		}
 		
 		//sort children list in descending order of the travel distance of trips
+		ArrayList<Double> distance;
+		ArrayList<Integer> sorted;
 		for(Integer father_id: father_trips.keySet()){
-			Collections.sort(father_trips.get(father_id).children, Collections.reverseOrder(new SortByDis()));
+			distance=new ArrayList<Double>();
+			for(Integer cid: father_trips.get(father_id).children){
+				distance.add(trip_meta.get(cid).td);
+			}
+			sorted=CustomSort.sort(father_trips.get(father_id).children, distance, Collections.reverseOrder(new CustomizedSort()));
+			father_trips.get(father_id).children=sorted;
 		}		
-		System.out.println((System.currentTimeMillis() - start)/1000/60 + "minutes elapsed");
+		System.out.println("load mergeable relation : "+(System.currentTimeMillis() - start)/1000/60 + " minutes elapsed");
 	}
 
 	public double od_merge_mergeable(TripMeta child_trip, TripMeta father_trip) {
@@ -314,7 +317,7 @@ public class Ridesharing {
 			}
 		}
 
-		System.out.println((System.currentTimeMillis() - start)/1000/60 + "minutes elapsed");
+		System.out.println("produce mergeable relation : "+(System.currentTimeMillis() - start)/1000/60 + " minutes elapsed");
 		return upper_bound;
 	}
 
