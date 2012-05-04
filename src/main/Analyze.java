@@ -8,6 +8,38 @@ import java.util.Set;
 import java.util.Random;
 
 public class Analyze {
+	public static void updateGraph(int sink, ArrayList<Integer> children, HashMap<Integer, ArrayList<Integer>> child_trips,
+			HashMap<Integer, FatherTrip> father_trips, ArrayList<TripMeta> trip_meta){
+		int j;
+		ArrayList<Integer> li=new ArrayList<Integer>();
+		li.add(sink);
+		li.addAll(children);
+		for (j = 0; j < li.size(); j++) {
+			// update the child_trips
+			int t_id = li.get(j);
+			if (child_trips.containsKey(t_id)) {
+				for (Integer f_id : child_trips.get(t_id)) {
+					father_trips.get(f_id).benefit -= trip_meta
+							.get(t_id).td;
+					father_trips.get(f_id).children.remove(t_id);
+					if (father_trips.get(f_id).children.size() == 0) {
+						father_trips.remove(f_id);
+					}
+				}
+				child_trips.remove(t_id);
+			}
+			if (father_trips.containsKey(t_id)) {
+				for (Integer c_id : father_trips.get(t_id).children) {
+					child_trips.get(c_id).remove(t_id);
+					if (child_trips.get(c_id).size() == 0) {
+						child_trips.remove(c_id);
+					}
+				}
+				father_trips.remove(t_id);
+			}
+		}
+	}
+	
 	public static HashMap<Integer, ArrayList<Integer>> optimal_filter(
 			HashMap<Integer, ArrayList<Integer>> child_trips,
 			HashMap<Integer, FatherTrip> father_trips,
@@ -76,40 +108,11 @@ public class Analyze {
 			}
 
 			// update father_trips and child_trips
-			int selected;
 			ArrayList<Integer> sinks = new ArrayList<Integer>(sink_ids);
-			ArrayList<Integer> li;
+			int selected;
 			for (i = 0; i < sinks.size(); i++) {
-				selected = sinks.get(i);
-				li = new ArrayList<Integer>();
-				li.add(selected);
-				if (rp.get(selected).size() > 0) {
-					li.addAll(rp.get(selected));
-					for (j = 0; j < li.size(); j++) {
-						// update the child_trips
-						int t_id = li.get(j);
-						if (child_trips.containsKey(t_id)) {
-							for (Integer f_id : child_trips.get(t_id)) {
-								father_trips.get(f_id).benefit -= trip_meta
-										.get(t_id).td;
-								father_trips.get(f_id).children.remove(t_id);
-								if (father_trips.get(f_id).children.size() == 0) {
-									father_trips.remove(f_id);
-								}
-							}
-							child_trips.remove(t_id);
-						}
-						if (father_trips.containsKey(t_id)) {
-							for (Integer c_id : father_trips.get(t_id).children) {
-								child_trips.get(c_id).remove(t_id);
-								if (child_trips.get(c_id).size() == 0) {
-									child_trips.remove(c_id);
-								}
-							}
-							father_trips.remove(t_id);
-						}
-					}
-				}
+				selected=sinks.get(i);
+				updateGraph(selected,rp.get(selected),child_trips, father_trips, trip_meta);
 			}
 		}
 		System.out.println("optimal filter : "+(System.currentTimeMillis() - start)/1000/60 + " minutes elapsed");
@@ -149,35 +152,67 @@ public class Analyze {
 		return results;
 	}
 	
-	HashMap<Integer, ArrayList<Integer>> greedy_strategy(
+	public static HashMap<Integer, ArrayList<Integer>> greedy_strategy(
 			HashMap<Integer, ArrayList<Integer>> child_trips,
 			HashMap<Integer, FatherTrip> father_trips,
 			ArrayList<TripMeta> trip_meta, int capacity, String option) {
 		long start=System.currentTimeMillis();
 		HashMap<Integer, ArrayList<Integer>> rp = new HashMap<Integer, ArrayList<Integer>>();
 		
-		int selected;
+		int selected, i;
 		Random rand=new Random();
+		ArrayList<Integer> id;
+		ArrayList<Double> attr;
 		while(father_trips.size()>0){
 			if(option.equals("random")){
 				selected=1+rand.nextInt(father_trips.size());
 			}else{
+				id=new ArrayList<Integer>(father_trips.keySet());
+				attr=new ArrayList<Double>();
 				if(option.equals("benefit")){
-					
+					for(i=0;i<id.size();i++){
+						attr.add(father_trips.get(id.get(i)).benefit);
+					}
 				}else{
 					if(option.equals("avg_benefit")){
-						
+						for(i=0;i<id.size();i++){
+							attr.add(father_trips.get(id.get(i)).benefit/father_trips.get(id.get(i)).children.size());
+						}
 					}else{
-						if(option.equals("child_no")){
-							
+						if(option.equals("children_no")){
+							for(i=0;i<id.size();i++){
+								attr.add(father_trips.get(id.get(i)).children.size()/1.0);
+							}
 						}
 					}
 				}
+				selected=CustomSort.max(id, attr);
 			}
+			//TODO:if edge filter is used, the codes should goes here
+			ArrayList<Integer> children=father_trips.get(selected).children;
+			updateGraph(selected, children, child_trips, father_trips, trip_meta);
 		}
 		
 		System.out.println("greedy strategy : "+(System.currentTimeMillis() - start)/1000/60 + " minutes elapsed");
 		return rp;
+	}
+	
+	public static double upper_bound(HashMap<Integer, ArrayList<Integer>> child_trips,
+			HashMap<Integer, FatherTrip> father_trips,
+			ArrayList<TripMeta> trip_meta, int capacity){
+		double upper_bound_by_child=0.0, upper_bound_by_father=0.0;
+		int i=0;
+		for(Integer c_id:child_trips.keySet()){
+			upper_bound_by_child+=trip_meta.get(c_id).td;
+		}
+		int c_id;
+		for(Integer f_id:father_trips.keySet()){
+			for(i=0;i<capacity;i++){
+				c_id=father_trips.get(f_id).children.get(i);
+				upper_bound_by_father+=trip_meta.get(c_id).td;
+			}
+		}
+		return upper_bound_by_child>upper_bound_by_father?upper_bound_by_father:upper_bound_by_child;
 	}
 
 }

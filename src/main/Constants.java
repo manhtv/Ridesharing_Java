@@ -15,4 +15,6 @@ public class Constants {
 	
 	//measurements
 	public static final String[] MEASUREMENTS={"saved_distance", "no_of_saved_trip","avg_delay","max_no_of_passenger","avg_no_of_passenger","max_delay"};
+	public static final String[] HEURISTICS={"upper_bound","optimal_filter","benefit", "avg_benefit", "children_no", "random"};
 }
+

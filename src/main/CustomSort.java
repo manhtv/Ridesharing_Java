@@ -24,6 +24,19 @@ class CustomizedSort implements Comparator<Pair>{
  * @sort an array based on associative attribute and return the top n entries
  */
 public class CustomSort{
+	public static int max(ArrayList<Integer> array, ArrayList<Double> attr_array){
+		int i,ret=0;
+		double max=-Constants.INF;
+		ArrayList<Pair> pairs=new ArrayList<Pair>();
+		for(i=0;i<array.size();i++){
+			if(attr_array.get(i)>max){
+				max=attr_array.get(i);
+				ret=i;
+			}
+		}
+		return ret;
+	}
+	
 	public static ArrayList<Integer> sort(ArrayList<Integer> array, ArrayList<Double> attr_array, Comparator<Pair> comp, int size){
 		ArrayList<Integer> ret=new ArrayList<Integer>();
 		if(array.size()!=attr_array.size()){
