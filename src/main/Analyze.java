@@ -21,7 +21,7 @@ public class Analyze {
 				for (Integer f_id : child_trips.get(t_id)) {
 					father_trips.get(f_id).benefit -= trip_meta
 							.get(t_id).td;
-					father_trips.get(f_id).children.remove(t_id);
+					father_trips.get(f_id).children.remove(new Integer(t_id));
 					if (father_trips.get(f_id).children.size() == 0) {
 						father_trips.remove(f_id);
 					}
@@ -30,7 +30,7 @@ public class Analyze {
 			}
 			if (father_trips.containsKey(t_id)) {
 				for (Integer c_id : father_trips.get(t_id).children) {
-					child_trips.get(c_id).remove(t_id);
+					child_trips.get(c_id).remove(new Integer(t_id));
 					if (child_trips.get(c_id).size() == 0) {
 						child_trips.remove(c_id);
 					}
@@ -66,7 +66,8 @@ public class Analyze {
 			sink_ids = new HashSet<Integer>();
 			for (Integer c_id : child_trips.keySet()) {
 				Set<Integer> intersec = new HashSet<Integer>(sink_trips);
-				if (intersec.retainAll(child_trips.get(c_id))) {
+				intersec.retainAll(child_trips.get(c_id));
+				if (intersec.size()>0) {
 					min_delay = Constants.INF;
 					sink_id = -1;
 					// choose the father trip that causes the minimum delay
@@ -115,7 +116,7 @@ public class Analyze {
 				updateGraph(selected,rp.get(selected),child_trips, father_trips, trip_meta);
 			}
 		}
-		System.out.println("optimal filter : "+(System.currentTimeMillis() - start)/1000/60 + " minutes elapsed");
+		//System.out.println("optimal filter : "+(System.currentTimeMillis() - start)/1000/60 + " minutes elapsed");
 		return rp;
 	}
 
@@ -124,13 +125,14 @@ public class Analyze {
 			HashMap<String, Double> mergeable_relation,
 			ArrayList<TripMeta> trip_meta) {
 		HashMap<String, Double> results = new HashMap<String, Double>();
-
-		double saved_distance = 0.0, max_no_of_passenger = 0, max_delay = 0.0, sum_delay = 0.0, no_of_saved_trip = 0.0, size, delay;
+		
+		double saved_distance = 0.0, max_no_of_passenger = 0, max_delay = 0.0, sum_delay = 0.0, no_of_saved_trip = 0.0, size, delay=0;
+		String pair_id;
 		for (Integer sink_id : rp.keySet()) {
 			for (Integer c_id : rp.get(sink_id)) {
 				saved_distance += trip_meta.get(c_id).td;
-				delay = mergeable_relation.get(String.valueOf(c_id) + "_"
-						+ String.valueOf(sink_id));
+				pair_id=String.valueOf(c_id) + "_"+ String.valueOf(sink_id);
+				delay = mergeable_relation.get(pair_id);
 				sum_delay += delay;
 				max_delay = delay > max_delay ? delay : max_delay;
 			}
@@ -139,6 +141,8 @@ public class Analyze {
 			max_no_of_passenger = max_no_of_passenger > size ? max_no_of_passenger
 					: size;
 		}
+
+
 		double avg_no_of_passenger, avg_delay;
 		avg_no_of_passenger = no_of_saved_trip / rp.size();
 		avg_delay = sum_delay / no_of_saved_trip;
@@ -159,13 +163,20 @@ public class Analyze {
 		long start=System.currentTimeMillis();
 		HashMap<Integer, ArrayList<Integer>> rp = new HashMap<Integer, ArrayList<Integer>>();
 		
-		int selected, i;
-		Random rand=new Random();
+		int selected=-1, i, rand_num;
 		ArrayList<Integer> id;
 		ArrayList<Double> attr;
 		while(father_trips.size()>0){
 			if(option.equals("random")){
-				selected=1+rand.nextInt(father_trips.size());
+				rand_num=Constants.rand.nextInt(father_trips.size());
+				i=0;
+				for(Integer f_id: father_trips.keySet()){
+					if(i==rand_num){
+						selected=f_id;
+						break;
+					}
+					i+=1;
+				}
 			}else{
 				id=new ArrayList<Integer>(father_trips.keySet());
 				attr=new ArrayList<Double>();
@@ -184,16 +195,20 @@ public class Analyze {
 								attr.add(father_trips.get(id.get(i)).children.size()/1.0);
 							}
 						}
-					}
+					}					
 				}
 				selected=CustomSort.max(id, attr);
 			}
+			if (!rp.containsKey(selected)) {
+				rp.put(selected, new ArrayList<Integer>(father_trips.get(selected).children));
+			}
+			
 			//TODO:if edge filter is used, the codes should goes here
 			ArrayList<Integer> children=father_trips.get(selected).children;
 			updateGraph(selected, children, child_trips, father_trips, trip_meta);
 		}
 		
-		System.out.println("greedy strategy : "+(System.currentTimeMillis() - start)/1000/60 + " minutes elapsed");
+		//System.out.println("greedy strategy : "+(System.currentTimeMillis() - start)/1000/60 + " minutes elapsed");
 		return rp;
 	}
 	
@@ -205,9 +220,10 @@ public class Analyze {
 		for(Integer c_id:child_trips.keySet()){
 			upper_bound_by_child+=trip_meta.get(c_id).td;
 		}
-		int c_id;
+		int c_id, size;
 		for(Integer f_id:father_trips.keySet()){
-			for(i=0;i<capacity;i++){
+			size=capacity<father_trips.get(f_id).children.size()?capacity:father_trips.get(f_id).children.size();
+			for(i=0;i<size;i++){
 				c_id=father_trips.get(f_id).children.get(i);
 				upper_bound_by_father+=trip_meta.get(c_id).td;
 			}

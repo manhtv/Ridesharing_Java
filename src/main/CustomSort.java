@@ -34,7 +34,7 @@ public class CustomSort{
 				ret=i;
 			}
 		}
-		return ret;
+		return array.get(ret);
 	}
 	
 	public static ArrayList<Integer> sort(ArrayList<Integer> array, ArrayList<Double> attr_array, Comparator<Pair> comp, int size){

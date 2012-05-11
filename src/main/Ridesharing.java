@@ -11,6 +11,17 @@ import java.util.Scanner;
 
 import util.Geo;
 
+class DeepCopy{
+	public static ArrayList<Integer> copy(ArrayList<Integer> list){
+		ArrayList<Integer> clone=new ArrayList<Integer>();
+		for(Integer id:list){
+			clone.add(id);
+		}
+		return clone;
+	}
+}
+
+
 class GPSPoint {
 	double lat;
 	double lon;
@@ -28,7 +39,7 @@ class FatherTrip{
 	ArrayList<Integer> children;
 	public FatherTrip(FatherTrip f){
 		benefit=f.benefit;
-		this.children=new ArrayList<Integer>(f.children);
+		this.children=DeepCopy.copy(f.children);
 	}
 	public FatherTrip(){
 		benefit=0.0;
@@ -59,27 +70,29 @@ public class Ridesharing {
 	}
 
 	public void main() {
-		int[] delay={900,1800,2700,3600};//, Constants.INF};
-		String dirName="Taxi_Shanghai";//"small_test_copy";
+		String dirName="Taxi_Shanghai";
+		//String dirName="small_test_copy";
 		
-		ArrayList<TripMeta> trip_meta=new ArrayList<TripMeta>();
-		/*
+		//int[] delay={900,1800,2700,3600};//, Constants.INF};
+		int[] delay={300,600,1200,1500};
 		ArrayList<Integer> delayArray=new ArrayList<Integer>();
 		for(int i=0;i<delay.length;i++){
 			delayArray.add(delay[i]);
-		}	
-		ArrayList<Double> upper_bound=produceMergeableRelation(dirName, delayArray, true, trip_meta);
-		*/
+		}
 		
+		ArrayList<Double> upper_bound=new ArrayList<Double>();
+		ArrayList<TripMeta> trip_meta=produceMergeableRelation(dirName, delayArray, true, upper_bound);
+		//ArrayList<TripMeta> trip_meta=loadTripMetaFile(absolutePath(dirName,"trip_meta"));
+		bounded_delay(dirName, upper_bound, delayArray, trip_meta);		
+				
+		/*
 		HashMap<Integer, ArrayList<Integer>> child_trips=new HashMap<Integer, ArrayList<Integer>>();
-		//child_trips.put(0, new ArrayList<Integer>());
 		HashMap<Integer, FatherTrip> father_trips=new HashMap<Integer, FatherTrip>();
-		//father_trips.put(0, new FatherTrip());
 		HashMap<String, Double> mergeable_relation=new HashMap<String, Double>();
-		
 		int idx=3;
 		String fileName="od_merge";
 		loadMergeableRelation(dirName, fileName, delay[idx],false, child_trips, father_trips, mergeable_relation);
+		*/
 	}
 	
 	public void bounded_delay(String dirName, ArrayList<Double> upper_bound, ArrayList<Integer> delayArray, ArrayList<TripMeta> trip_meta){
@@ -92,11 +105,8 @@ public class Ridesharing {
 			data.add(new ArrayList<Double>());
 		}
 		
-		
 		HashMap<Integer, ArrayList<Integer>> child_trips=new HashMap<Integer, ArrayList<Integer>>();
-		//child_trips.put(0, new ArrayList<Integer>());
 		HashMap<Integer, FatherTrip> father_trips=new HashMap<Integer, FatherTrip>();
-		//father_trips.put(0, new FatherTrip());
 		HashMap<String, Double> mergeable_relation=new HashMap<String, Double>();
 		
 		HashMap<Integer, ArrayList<Integer>> child_trips_copy;
@@ -104,43 +114,60 @@ public class Ridesharing {
 		
 		HashMap<Integer,ArrayList<Integer>> rp=new HashMap<Integer,ArrayList<Integer>>();
 		for(i=0;i<delayArray.size();i++){
+			child_trips.clear();
+			father_trips.clear();
+			mergeable_relation.clear();
+			
 			pair_file="od_merge";
 			delay=delayArray.get(i);
+			
 			if(delay<Constants.INF || Constants.HEURISTICS.length>2){
 				if(delay<Constants.INF){
 					pair_file+="_"+String.valueOf(delay);
 				}
+
 				loadMergeableRelation(dirName, pair_file, delay,false, child_trips, father_trips, mergeable_relation);
 			}
+			if(Constants.debug){
+				System.out.println(String.valueOf(delay)+" : "+child_trips.size()+"  "+father_trips.size()+"  "+mergeable_relation.size());
+			}
+			
 			for(j=0;j<Constants.HEURISTICS.length;j++){
+				child_trips_copy=copyC(child_trips);
+				father_trips_copy=copyF(father_trips);
+				if(Constants.debug){
+					System.out.print(Constants.HEURISTICS[j]+" : "+child_trips_copy.size()+"  "+father_trips_copy.size()+"  "+mergeable_relation.size()+" ");
+				}
 				if(j==0){
 					if(delay<Constants.INF){
-						data.get(j).add(Analyze.upper_bound(child_trips, father_trips, trip_meta, Constants.INF));
+						data.get(j).add(Analyze.upper_bound(child_trips_copy, father_trips_copy, trip_meta, Constants.INF));
 					}else{
 						data.get(j).add(upper_bound.get(j));
 					}
 				}else{
-					child_trips_copy=copyC(child_trips);
-					father_trips_copy=copyF(father_trips);
 					if(j==1 && delay<Constants.INF){
 						rp=Analyze.optimal_filter(child_trips_copy, father_trips_copy, mergeable_relation, trip_meta, Constants.INF);
 					}else{
 						if(j>1){
 							rp=Analyze.greedy_strategy(child_trips_copy, father_trips_copy, trip_meta, Constants.INF, Constants.HEURISTICS[j]);
+							System.out.println(rp.size());
 						}
 					}
 					if(! (j==1&&delay==Constants.INF)){
-						data.get(j).add(Analyze.profileRP(rp, mergeable_relation, trip_meta).get(0));
+						data.get(j).add(Analyze.profileRP(rp, mergeable_relation, trip_meta).get("saved_distance"));
 					}else{
 						data.get(j).add(upper_bound.get(i));
 					}
+				}
+				if(Constants.debug){
+					System.out.println(data.get(j).get(i));
 				}
 			}
 		}
 		
 		BufferedWriter bounded_delay;
 		try {
-			bounded_delay = new BufferedWriter(new FileWriter("bounded_delay.txt"));	
+			bounded_delay = new BufferedWriter(new FileWriter(absolutePath(dirName,"bounded_delay")));	
 			for(i=0;i<data.size();i++){
 				for(j=0;j<data.get(i).size();j++){
 					bounded_delay.write(String.valueOf(data.get(i).get(j)));
@@ -162,14 +189,14 @@ public class Ridesharing {
 		String[] fileNames=new String[names.length];
 		int i,j;
 		for(i=0;i<fileNames.length;i++){
-			fileNames[i]=Constants.PROCESSED_DIR+dirName+"/"+names[i]+".txt";
+			fileNames[i]=absolutePath(dirName, names[i]);
 		}
 		ArrayList<TripMeta> trip_meta=loadTripMetaFile(fileNames[0]);
 		
 		BufferedWriter relation_graph=null;
 		if(graphViz){
 			try {
-				relation_graph=new BufferedWriter(new FileWriter(Constants.PROCESSED_DIR+dirName+"/relation_graph.gv"));
+				relation_graph=new BufferedWriter(new FileWriter(absolutePath(dirName, "relation_graph")));
 				relation_graph.write("digraph graphname {\n");
 			}catch(IOException e){
 				e.printStackTrace();
@@ -289,25 +316,26 @@ public class Ridesharing {
 		return trip_meta;
 	}
 
-	public ArrayList<Double> produceMergeableRelation(String dirName,
-			ArrayList<Integer> delayArray, boolean output, ArrayList<TripMeta> trip_meta) {
+	public ArrayList<TripMeta> produceMergeableRelation(String dirName,
+			ArrayList<Integer> delayArray, boolean output, ArrayList<Double> upper_bound) {
 		long start = System.currentTimeMillis();
-		ArrayList<Double> upper_bound = new ArrayList<Double>();
 
 		ArrayList<String> names = new ArrayList<String>();
 		names.add("trip_meta");
 		int i, j;
-		for (i = 0; i < delayArray.size() - 1; i++) {
-			names.add("od_merge_" + String.valueOf(delayArray.get(i)));
+		for (i = 0; i < delayArray.size(); i++) {
+			if(delayArray.get(i)<Constants.INF){
+				names.add("od_merge_" + String.valueOf(delayArray.get(i)));
+			}else{
+				names.add("od_merge");
+			}
 		}
-		names.add("od_merge");
-
+		
 		ArrayList<String> file_names = new ArrayList<String>();
 		for (String name : names) {
-			file_names.add(Constants.PROCESSED_DIR + dirName + "/" + name
-					+ ".txt");
+			file_names.add(absolutePath(dirName,name));
 		}
-		trip_meta = loadTripMetaFile(file_names.get(0));
+		ArrayList<TripMeta> trip_meta = loadTripMetaFile(file_names.get(0));
 		// System.out.println(trip_meta.size());
 
 		ArrayList<ArrayList<Integer>> child_sets = new ArrayList<ArrayList<Integer>>();
@@ -401,28 +429,30 @@ public class Ridesharing {
 		}
 
 		System.out.println("produce mergeable relation : "+(System.currentTimeMillis() - start)/1000/60 + " minutes elapsed");
-		return upper_bound;
+		return trip_meta;
 	}
 
-	public ArrayList<Double> produceMergeableRelation(String dirName,
-			ArrayList<Integer> delayArray,ArrayList<TripMeta> trip_meta) {
-		return produceMergeableRelation(dirName, delayArray, false, trip_meta);
+	public ArrayList<TripMeta> produceMergeableRelation(String dirName,
+			ArrayList<Integer> delayArray, ArrayList<Double> upper_bound) {
+		return produceMergeableRelation(dirName, delayArray, false, upper_bound);
 	}
 
-	public ArrayList<Double> produceMergeableRelation(String dirName,
-			boolean output, ArrayList<TripMeta> trip_meta) {
+	public ArrayList<TripMeta> produceMergeableRelation(String dirName,
+			boolean output, ArrayList<Double> upper_bound) {
 		return produceMergeableRelation(dirName, new ArrayList<Integer>(),
-				output, trip_meta);
+				output,upper_bound);
 	}
 
-	public ArrayList<Double> produceMergeableRelation(String dirName, ArrayList<TripMeta> trip_meta) {
+	public ArrayList<TripMeta> produceMergeableRelation(String dirName, ArrayList<Double> upper_bound) {
 		return produceMergeableRelation(dirName, new ArrayList<Integer>(),
-				false, trip_meta);
+				false,upper_bound);
 	}
 	
 	HashMap<Integer,ArrayList<Integer>> copyC(HashMap<Integer,ArrayList<Integer>> child_trips){
 		HashMap<Integer,ArrayList<Integer>> copy=new HashMap<Integer,ArrayList<Integer>>();
+		ArrayList<Integer> clone=new ArrayList<Integer>();
 		for(Integer c_id:child_trips.keySet()){
+			//copy.put(c_id, DeepCopy.copy(child_trips.get(c_id)));
 			copy.put(c_id, new ArrayList<Integer>(child_trips.get(c_id)));
 		}
 		return copy;
@@ -434,5 +464,9 @@ public class Ridesharing {
 			copy.put(f_id, new FatherTrip(father_trips.get(f_id)));
 		}
 		return copy;
+	}
+	
+	String absolutePath(String dirName, String fileName){
+		return Constants.PROCESSED_DIR+dirName+"/"+fileName+".txt";
 	}
 }

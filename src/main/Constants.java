@@ -1,12 +1,17 @@
 package main;
 
+import java.util.Random;
+
 public class Constants {
+	public static final boolean debug=true;
+	
 	//directory configuration
 	public static final String BASE_DIR = "C:/Program Files/Weka-3-6/data/Taxi_Trajectory/";
 	public static final String RAW_DIR = BASE_DIR + "raw/";
 	public static final String PROCESSED_DIR = BASE_DIR + "processed/";
 	public static final String SAVEDIR="E:\\Research\\MobileComputing\\RideSharing\\experiment_result\\";
 
+	public static final Random rand=new Random();	
 	public static final int INF = 9999999;
 
 	//Mergeable Relation
