@@ -81,8 +81,8 @@ public class Ridesharing {
 		}
 		
 		ArrayList<Double> upper_bound=new ArrayList<Double>();
-		ArrayList<TripMeta> trip_meta=produceMergeableRelation(dirName, delayArray, true, upper_bound);
-		//ArrayList<TripMeta> trip_meta=loadTripMetaFile(absolutePath(dirName,"trip_meta"));
+		//ArrayList<TripMeta> trip_meta=produceMergeableRelation(dirName, delayArray, true, upper_bound);
+		ArrayList<TripMeta> trip_meta=loadTripMetaFile(absolutePath(dirName,"trip_meta"));
 		bounded_delay(dirName, upper_bound, delayArray, trip_meta);		
 				
 		/*
@@ -150,7 +150,7 @@ public class Ridesharing {
 					}else{
 						if(j>1){
 							rp=Analyze.greedy_strategy(child_trips_copy, father_trips_copy, trip_meta, Constants.INF, Constants.HEURISTICS[j]);
-							System.out.println(rp.size());
+							//System.out.println(rp.size());
 						}
 					}
 					if(! (j==1&&delay==Constants.INF)){
