@@ -365,6 +365,7 @@ class BellmanFord {
     }
     
     public static Graph.CostPathPair getShortestPath(Graph g, Graph.Vertex start, Graph.Vertex end) {
+    	long start_time=System.currentTimeMillis();
         if (g==null) throw (new NullPointerException("Graph must be non-NULL."));
 
         containsNegativeWeightCycle = false;
@@ -413,7 +414,7 @@ class BellmanFord {
                 }
             }
         }
-
+        System.out.println("BellmanFord takes "+(System.currentTimeMillis()-start_time)/60000+" minutes");
         if (end!=null) {
             Graph.CostVertexPair pair = costs.get(end);
             Set<Graph.Edge> set = paths.get(end);
@@ -549,7 +550,9 @@ class JohnsonShortestPath {
     private JohnsonShortestPath() { }
     
     public static Map<Graph.Vertex, Map<Graph.Vertex, Set<Graph.Edge>>> getAllPairsShortestPaths(Graph g) {
-        Map<Graph.Vertex, Map<Graph.Vertex, Set<Graph.Edge>>> allShortestPaths = new HashMap<Graph.Vertex, Map<Graph.Vertex, Set<Graph.Edge>>>();
+    	long start_time=System.currentTimeMillis();
+    	int diameter=0;
+    	Map<Graph.Vertex, Map<Graph.Vertex, Set<Graph.Edge>>> allShortestPaths = new HashMap<Graph.Vertex, Map<Graph.Vertex, Set<Graph.Edge>>>();
 
         // Add the connector Vertex to all edges.
         for (Graph.Vertex v : g.getVerticies()) {
@@ -591,9 +594,14 @@ class JohnsonShortestPath {
             for (Graph.Vertex v2 : costPaths.keySet()) {
                 Graph.CostPathPair  pair = costPaths.get(v2);
                 paths.put(v2, pair.getPath());
-            }
+                if(pair.getPath().size()>diameter){
+                	diameter=pair.getPath().size();
+                	System.out.println("Diameter now is "+diameter);
+                }
+            }            
             allShortestPaths.put(v, paths);
         }
+        System.out.println("JohnsonShortestPaths takes "+(System.currentTimeMillis()-start_time)/60000+" minutes");
         return allShortestPaths;
     }
 }
@@ -607,19 +615,11 @@ public class ComputeDiameter{
 	public static void compute(String mergeable_relation){
 		Graph g=buildGraph(mergeable_relation);
 		Map<Graph.Vertex, Map<Graph.Vertex, Set<Graph.Edge>>> shortestPaths=JohnsonShortestPath.getAllPairsShortestPaths(g);
-		int diameter=0;
-		for(Map.Entry<Graph.Vertex, Map<Graph.Vertex, Set<Graph.Edge>>> entryO: shortestPaths.entrySet())
-		{
-			for(Map.Entry<Graph.Vertex, Set<Graph.Edge>> entryI: entryO.getValue().entrySet()){
-				int size=entryI.getValue().size();
-				diameter=diameter>size?diameter:size;
-			}
-		}
-		System.out.println("Diameter is "+diameter);
 	}
 	
 	
 	private static Graph buildGraph(String s){
+		long start_time=System.currentTimeMillis();
 		HashSet<Graph.Vertex> v=new HashSet<Graph.Vertex>();
 		ArrayList<Graph.Edge> e=new ArrayList<Graph.Edge>();
 		try {
@@ -635,6 +635,7 @@ public class ComputeDiameter{
 		} catch (FileNotFoundException ex) {
 			ex.printStackTrace();
 		}
+		System.out.println("buildGraph takes "+(System.currentTimeMillis()-start_time)/60000+" minutes");
 		return new Graph(new ArrayList<Graph.Vertex>(v),e);
 	}
 }
