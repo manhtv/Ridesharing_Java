@@ -56,6 +56,9 @@ class Graph {
         type = g.getType();
     }
     
+    /*
+     * define the graph class
+     */
     public Graph(TYPE type) {
         this();
         this.type = type;
