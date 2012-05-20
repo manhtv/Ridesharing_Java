@@ -6,7 +6,7 @@ public class Constants {
 	public static final boolean debug=true;
 	
 	//directory configuration
-	public static final String BASE_DIR = "E:/data/TaxiTrajectory/Shanghai/";
+	public static final String BASE_DIR = "C:/Program Files/Weka-3-6/data/Taxi_Trajectory/";
 	public static final String RAW_DIR = BASE_DIR + "raw/";
 	public static final String PROCESSED_DIR = BASE_DIR + "processed/";
 	public static final String SAVEDIR="E:/kuaipan/experiment_results/";

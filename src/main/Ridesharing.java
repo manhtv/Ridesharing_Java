@@ -70,20 +70,20 @@ public class Ridesharing {
 	}
 
 	public void main() {
-		String dirName="Taxi_Shanghai";
-		//String dirName="small_test_copy";
+		//String dirName="Taxi_Shanghai";
+		String dirName="small_test_copy";
 		
-		//int[] delay={900,1800,2700,3600};//, Constants.INF};
-		int[] delay={300,600,1200,1500};
+		int[] delay={900,1800,2700,3600};//, Constants.INF};
+		//int[] delay={300,600,1200,1500};
 		ArrayList<Integer> delayArray=new ArrayList<Integer>();
 		for(int i=0;i<delay.length;i++){
 			delayArray.add(delay[i]);
 		}
 		
 		ArrayList<Double> upper_bound=new ArrayList<Double>();
-		//ArrayList<TripMeta> trip_meta=produceMergeableRelation(dirName, delayArray, true, upper_bound);
-		ArrayList<TripMeta> trip_meta=loadTripMetaFile(absolutePath(dirName,"trip_meta"));
-		bounded_delay(dirName, upper_bound, delayArray, trip_meta);		
+		ArrayList<TripMeta> trip_meta=produceMergeableRelation(dirName, delayArray, true, upper_bound);
+		//ArrayList<TripMeta> trip_meta=loadTripMetaFile(absolutePath(dirName,"trip_meta"));
+		bounded_delay(dirName, upper_bound, delayArray, trip_meta, "percentage_of_saved_distance");		
 				
 		/*
 		HashMap<Integer, ArrayList<Integer>> child_trips=new HashMap<Integer, ArrayList<Integer>>();
@@ -95,7 +95,7 @@ public class Ridesharing {
 		*/
 	}
 	
-	public void bounded_delay(String dirName, ArrayList<Double> upper_bound, ArrayList<Integer> delayArray, ArrayList<TripMeta> trip_meta){
+	public void bounded_delay(String dirName, ArrayList<Double> upper_bound, ArrayList<Integer> delayArray, ArrayList<TripMeta> trip_meta, String ylabel){
 		int i,j;
 		String pair_file;
 		int delay;
@@ -111,6 +111,13 @@ public class Ridesharing {
 		
 		HashMap<Integer, ArrayList<Integer>> child_trips_copy;
 		HashMap<Integer, FatherTrip> father_trips_copy;
+	
+		// calculate the totoal distance of all trips
+		double totalDist=0;
+		for(TripMeta tm: trip_meta){
+			totalDist+=tm.td;
+		}
+		totalDist/=1000.0;
 		
 		HashMap<Integer,ArrayList<Integer>> rp=new HashMap<Integer,ArrayList<Integer>>();
 		for(i=0;i<delayArray.size();i++){
@@ -132,6 +139,7 @@ public class Ridesharing {
 				System.out.println(String.valueOf(delay)+" : "+child_trips.size()+"  "+father_trips.size()+"  "+mergeable_relation.size());
 			}
 			
+			double measure;
 			for(j=0;j<Constants.HEURISTICS.length;j++){
 				child_trips_copy=copyC(child_trips);
 				father_trips_copy=copyF(father_trips);
@@ -140,10 +148,14 @@ public class Ridesharing {
 				}
 				if(j==0){
 					if(delay<Constants.INF){
-						data.get(j).add(Analyze.upper_bound(child_trips_copy, father_trips_copy, trip_meta, Constants.INF));
+						measure=Analyze.upper_bound(child_trips_copy, father_trips_copy, trip_meta, Constants.INF)/1000;
 					}else{
-						data.get(j).add(upper_bound.get(j));
+						measure=upper_bound.get(j);
 					}
+					if(ylabel.startsWith("percentage")){
+						measure/=totalDist;
+					}
+					data.get(j).add(measure);
 				}else{
 					if(j==1 && delay<Constants.INF){
 						rp=Analyze.optimal_filter(child_trips_copy, father_trips_copy, mergeable_relation, trip_meta, Constants.INF);
@@ -154,10 +166,14 @@ public class Ridesharing {
 						}
 					}
 					if(! (j==1&&delay==Constants.INF)){
-						data.get(j).add(Analyze.profileRP(rp, mergeable_relation, trip_meta).get("saved_distance"));
+						measure=Analyze.profileRP(rp, mergeable_relation, trip_meta).get("saved_distance")/1000.0;
 					}else{
-						data.get(j).add(upper_bound.get(i));
+						measure=upper_bound.get(i)/1000.0;
 					}
+					if(ylabel.startsWith("percentage")){
+						measure/=totalDist;
+					}
+					data.get(j).add(measure);
 				}
 				if(Constants.debug){
 					System.out.println(data.get(j).get(i));
@@ -165,9 +181,16 @@ public class Ridesharing {
 			}
 		}
 		
+
+		
 		BufferedWriter bounded_delay;
+		String saveFile="bounded_delay_";
+		for(Integer d: delayArray){
+			saveFile+=String.valueOf(d)+"_";
+		}
+		saveFile+=ylabel;
 		try {
-			bounded_delay = new BufferedWriter(new FileWriter(absolutePath(dirName,"bounded_delay")));	
+			bounded_delay = new BufferedWriter(new FileWriter(absolutePath(dirName,saveFile)));	
 			for(i=0;i<data.size();i++){
 				for(j=0;j<data.get(i).size();j++){
 					bounded_delay.write(String.valueOf(data.get(i).get(j)));
