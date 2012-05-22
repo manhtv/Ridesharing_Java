@@ -48,13 +48,13 @@ class FatherTrip{
 }
 
 class TripMeta {
-	int taxi_id;
+	long taxi_id;
 	GPSPoint start_point;
 	GPSPoint end_point;
 	int tt;
 	double td;
 
-	public TripMeta(int taxi_id, double lat1, double lon1, int time1,
+	public TripMeta(long taxi_id, double lat1, double lon1, int time1,
 			double lat2, double lon2, int time2, int tt, double td) {
 		this.taxi_id = taxi_id;
 		this.start_point = new GPSPoint(lat1, lon1, time1);
@@ -71,10 +71,10 @@ public class Ridesharing {
 
 	public void main() {
 		//String dirName="Taxi_Shanghai";
-		String dirName="small_test_copy";
+		String dirName=Constants.DATE;
 		
-		int[] delay={900,1800,2700,3600};//, Constants.INF};
-		//int[] delay={300,600,1200,1500};
+		//int[] delay={1500,1800,2100,2400};//, Constants.INF};
+		int[] delay={300,600,900,1200};
 		ArrayList<Integer> delayArray=new ArrayList<Integer>();
 		for(int i=0;i<delay.length;i++){
 			delayArray.add(delay[i]);
@@ -114,8 +114,8 @@ public class Ridesharing {
 	
 		// calculate the totoal distance of all trips
 		double totalDist=0;
-		for(TripMeta tm: trip_meta){
-			totalDist+=tm.td;
+		for(i=1;i<trip_meta.size();i++){
+			totalDist+=trip_meta.get(i).td;
 		}
 		totalDist/=1000.0;
 		
@@ -184,7 +184,7 @@ public class Ridesharing {
 
 		
 		BufferedWriter bounded_delay;
-		String saveFile="bounded_delay_";
+		String saveFile=dirName+"_";
 		for(Integer d: delayArray){
 			saveFile+=String.valueOf(d)+"_";
 		}
@@ -307,7 +307,7 @@ public class Ridesharing {
 				child_trip.end_point.lon, father_trip.end_point.lat,
 				father_trip.end_point.lon)
 				/ Constants.PACE;
-		double delay = (father_trip.end_point.time + t_walkLeg2 - child_trip.end_point.time)
+		double delay = (father_trip.end_point.time + t_walkLeg2 - child_trip.start_point.time)
 				- child_trip.tt;
 		return delay;
 	}
@@ -321,7 +321,7 @@ public class Ridesharing {
 				String line = sc.nextLine();
 				String[] fields = line.substring(0, line.length() - 1).split(
 						",");
-				int taxi_id = Integer.parseInt(fields[1]);
+				long taxi_id = Long.parseLong(fields[1]);
 				double lat1 = Double.parseDouble(fields[2]);
 				double lon1 = Double.parseDouble(fields[3]);
 				int time1 = Integer.parseInt(fields[4]);

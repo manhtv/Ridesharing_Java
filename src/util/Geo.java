@@ -1,6 +1,11 @@
 package util;
 
 public class Geo {
+	public static void main(String[] args){
+		System.out.println(distBetween(39.79217,116.42037,39.84445,116.41141));
+	}
+	
+	
 	/*
 	 * @return Distance between two Points : Using the below function you can
 	 * find distance between two points.
