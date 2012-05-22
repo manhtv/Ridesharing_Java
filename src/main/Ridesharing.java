@@ -73,7 +73,7 @@ public class Ridesharing {
 		String dirName=Constants.DATE;
 		
 		//int[] delay={1500,1800,2100,2400};//, Constants.INF};
-		int[] delay={300,600,900,1200};
+		int[] delay={300,600,900,1200, 1500, 1800};
 		ArrayList<Integer> delayArray=new ArrayList<Integer>();
 		for(int i=0;i<delay.length;i++){
 			delayArray.add(delay[i]);
