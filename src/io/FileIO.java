@@ -16,7 +16,8 @@ import main.Constants;
 
 public class FileIO {
 	public static void main(String[] args) {
-		ReadSingleDayFile();
+		//ProduceTrajectoriesIndexedByDate();
+		ProduceSingleDateFile(Constants.DATE);
 	}
 
 	public static void test() {
@@ -36,11 +37,11 @@ public class FileIO {
 		}
 	}
 
-	/*
-	 * @return load trajectories from a single day the file format is the old
-	 * format, i.e. jiafeng hu's format
+	/**
+	 * @function load the whole trajectory data set(filtered) and partition them into dates. Trajectories of each day is contained in a folder named by the date and 
+	 * there is a file containing all trajectories in that day for each taxi.
 	 */
-	public static void ReadSingleDayFile() {
+	public static void ProduceTrajectoriesIndexedByDate() {
 		int line_no = 0;
 		Scanner sc;
 		String taxi_id, line, date;
@@ -81,6 +82,48 @@ public class FileIO {
 			ex.printStackTrace();
 		}
 
+	}
+	
+	/**
+	 * @function a folder in which there is a file containing all trajectories of each taxi in the given date
+	 * input file format, i.e. jiafeng hu's format DateTrackData
+	 */
+	public static void ProduceSingleDateFile(String date){
+		Scanner sc;
+		String taxi_id="", line;
+		File dateDir, date_taxi;
+		BufferedWriter bw=null;
+		String[] fields;
+		try {
+			dateDir=new File(Constants.RAW_DIR+date);
+			if(!dateDir.exists()){
+				dateDir.mkdir();
+			}
+			sc = new Scanner(new File(Constants.RAW_DIR+date+".txt"));
+			while (sc.hasNextLine()) {
+				line = sc.nextLine();
+				line=line.replace('/', '-');
+				if (line.startsWith("#")) {
+					fields=line.split(",");
+					taxi_id=fields[2];
+					date_taxi=new File(Constants.RAW_DIR+date+"/"+taxi_id+".txt");
+					if(bw!=null){
+						bw.close();
+					}
+					if(date_taxi.exists()){
+						bw=new BufferedWriter(new FileWriter(date_taxi, true));
+					}else{
+						bw=new BufferedWriter(new FileWriter(date_taxi));
+					}
+				}else{
+					if(bw==null) System.out.println("bw is NULL!!!");
+					bw.write(taxi_id + "," + line+"\n");
+				}
+			}
+			// System.out.println(line_no);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 
 }
