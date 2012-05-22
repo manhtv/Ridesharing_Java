@@ -70,7 +70,6 @@ public class Ridesharing {
 	}
 
 	public void main() {
-		//String dirName="Taxi_Shanghai";
 		String dirName=Constants.DATE;
 		
 		//int[] delay={1500,1800,2100,2400};//, Constants.INF};
