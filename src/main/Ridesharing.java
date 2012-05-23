@@ -73,7 +73,7 @@ public class Ridesharing {
 		String dirName=Constants.DATE;
 		
 		//int[] delay={1500,1800,2100,2400};//, Constants.INF};
-		int[] delay={300,600,900,1200, 1500, 1800};
+		int[] delay={300,600,900,1200};
 		ArrayList<Integer> delayArray=new ArrayList<Integer>();
 		for(int i=0;i<delay.length;i++){
 			delayArray.add(delay[i]);
@@ -82,7 +82,8 @@ public class Ridesharing {
 		ArrayList<Double> upper_bound=new ArrayList<Double>();
 		ArrayList<TripMeta> trip_meta=produceMergeableRelation(dirName, delayArray, true, upper_bound);
 		//ArrayList<TripMeta> trip_meta=loadTripMetaFile(absolutePath(dirName,"trip_meta"));
-		bounded_delay(dirName, upper_bound, delayArray, trip_meta, "percentage_of_saved_distance");		
+		
+		bounded_delay(dirName, upper_bound, delayArray, trip_meta, "percentage_of_saved_distance", Constants.NO_LONG_WALK);		
 				
 		/*
 		HashMap<Integer, ArrayList<Integer>> child_trips=new HashMap<Integer, ArrayList<Integer>>();
@@ -94,7 +95,7 @@ public class Ridesharing {
 		*/
 	}
 	
-	public void bounded_delay(String dirName, ArrayList<Double> upper_bound, ArrayList<Integer> delayArray, ArrayList<TripMeta> trip_meta, String ylabel){
+	public void bounded_delay(String dirName, ArrayList<Double> upper_bound, ArrayList<Integer> delayArray, ArrayList<TripMeta> trip_meta, String ylabel, boolean no_long_walk){
 		int i,j;
 		String pair_file;
 		int delay;
@@ -291,7 +292,7 @@ public class Ridesharing {
 		System.out.println("load mergeable relation : "+(System.currentTimeMillis() - start)/1000/60 + " minutes elapsed");
 	}
 
-	public double od_merge_mergeable(TripMeta child_trip, TripMeta father_trip) {
+	public double od_merge_mergeable(TripMeta child_trip, TripMeta father_trip, boolean walkDistanceConstraint) {
 		if (child_trip.start_point.time >= father_trip.start_point.time) {
 			return -Constants.INF;
 		}
@@ -299,6 +300,9 @@ public class Ridesharing {
 				child_trip.start_point.lon, father_trip.start_point.lat,
 				father_trip.start_point.lon)
 				/ Constants.PACE;
+		if(t_walkLeg1>Constants.MAXIMUM_WALKING_DISTANCE){
+			return -Constants.INF;
+		}
 		if (child_trip.start_point.time + t_walkLeg1 > father_trip.start_point.time) {
 			return -Constants.INF;
 		}
@@ -306,6 +310,9 @@ public class Ridesharing {
 				child_trip.end_point.lon, father_trip.end_point.lat,
 				father_trip.end_point.lon)
 				/ Constants.PACE;
+		if(t_walkLeg2>Constants.MAXIMUM_WALKING_DISTANCE){
+			return -Constants.INF;
+		}
 		double delay = (father_trip.end_point.time + t_walkLeg2 - child_trip.start_point.time)
 				- child_trip.tt;
 		return delay;
@@ -386,14 +393,14 @@ public class Ridesharing {
 		for (i = 1; i < trip_meta.size(); i++) {
 			for (j = i + 1; j < trip_meta.size(); j++) {
 				mergeable = false;
-				delay = od_merge_mergeable(trip_meta.get(i), trip_meta.get(j));
+				delay = od_merge_mergeable(trip_meta.get(i), trip_meta.get(j), Constants.NO_LONG_WALK);
 				if (delay != -Constants.INF ) {
 					c_id = i;
 					f_id = j;
 					mergeable = true;
 				} else {
 					delay = od_merge_mergeable(trip_meta.get(j),
-							trip_meta.get(i));
+							trip_meta.get(i), Constants.NO_LONG_WALK);
 					if (delay != -Constants.INF) {
 						c_id = j;
 						f_id = i;
@@ -489,6 +496,11 @@ public class Ridesharing {
 	}
 	
 	String absolutePath(String dirName, String fileName){
-		return Constants.PROCESSED_DIR+dirName+"/"+fileName+".txt";
+		String ret=Constants.PROCESSED_DIR+dirName+"/";
+		if(Constants.NO_LONG_WALK){
+			ret+="no_long_walk/";
+		}
+		ret+=fileName+".txt";
+		return ret;
 	}
 }

@@ -103,20 +103,20 @@ public class FileIO {
 			while (sc.hasNextLine()) {
 				line = sc.nextLine();
 				line=line.replace('/', '-');
-				if (line.startsWith("#")) {
+				if (line.startsWith("#")) { //separated by time. if time gap is large enough, GPS points are partitioned.
 					fields=line.split(",");
 					taxi_id=fields[2];
 					date_taxi=new File(Constants.RAW_DIR+date+"/"+taxi_id+".txt");
 					if(bw!=null){
+						bw.write(taxi_id+","+"2001-01-01 01:01:01,39.87417,116.31596,0,0,0"+"\n"); //insert a line in which the occupied field is 0 as the separator line 
 						bw.close();
 					}
 					if(date_taxi.exists()){
 						bw=new BufferedWriter(new FileWriter(date_taxi, true));
 					}else{
 						bw=new BufferedWriter(new FileWriter(date_taxi));
-					}
+					} 
 				}else{
-					if(bw==null) System.out.println("bw is NULL!!!");
 					bw.write(taxi_id + "," + line+"\n");
 				}
 			}

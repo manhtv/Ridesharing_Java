@@ -2,7 +2,7 @@ package util;
 
 public class Geo {
 	public static void main(String[] args){
-		System.out.println(distBetween(116.38056,39.85697,116.3944,39.99634));
+		System.out.println(distBetween(39.75539,116.51635,39.86091,116.41459));
 	}
 	
 	
