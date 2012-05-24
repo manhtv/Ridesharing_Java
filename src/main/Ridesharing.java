@@ -300,7 +300,7 @@ public class Ridesharing {
 				child_trip.start_point.lon, father_trip.start_point.lat,
 				father_trip.start_point.lon)
 				/ Constants.PACE;
-		if(t_walkLeg1>Constants.MAXIMUM_WALKING_DISTANCE){
+		if(t_walkLeg1*Constants.PACE>Constants.MAXIMUM_WALKING_DISTANCE){
 			return -Constants.INF;
 		}
 		if (child_trip.start_point.time + t_walkLeg1 > father_trip.start_point.time) {
@@ -310,7 +310,7 @@ public class Ridesharing {
 				child_trip.end_point.lon, father_trip.end_point.lat,
 				father_trip.end_point.lon)
 				/ Constants.PACE;
-		if(t_walkLeg2>Constants.MAXIMUM_WALKING_DISTANCE){
+		if(t_walkLeg2*Constants.PACE>Constants.MAXIMUM_WALKING_DISTANCE){
 			return -Constants.INF;
 		}
 		double delay = (father_trip.end_point.time + t_walkLeg2 - child_trip.start_point.time)
